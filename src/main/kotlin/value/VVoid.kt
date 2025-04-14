@@ -4,7 +4,8 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class VVoid(val v: Unit = Unit): Value() {
+@SerialName("VVoid")
+data object VVoid: Value() {
 
     @SerialName("yType")
     override val type = Type.VOID

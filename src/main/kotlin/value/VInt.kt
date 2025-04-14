@@ -1,10 +1,10 @@
 package com.dlfsystems.value
 
-import com.dlfsystems.vm.Context
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@SerialName("VInt")
 data class VInt(val v: Int): Value() {
 
     @SerialName("yType")

@@ -1,13 +1,13 @@
 package com.dlfsystems.value
 
 import com.dlfsystems.server.Yegg
-import com.dlfsystems.vm.Context
 import com.dlfsystems.world.Obj
 import com.dlfsystems.world.ObjID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@SerialName("VObj")
 data class VObj(val v: ObjID?): Value() {
 
     @SerialName("yType")
@@ -47,7 +47,7 @@ data class VObj(val v: ObjID?): Value() {
 
     private fun propAsString() = VString(toString())
 
-    private fun propTraits(obj: Obj) = VList(obj.traits.map { VTrait(it) }.toMutableList())
+    private fun propTraits(obj: Obj) = VList(obj.traits.mapNotNull { Yegg.world.getTrait(it)?.vTrait }.toMutableList())
 
     // Custom verbs
 

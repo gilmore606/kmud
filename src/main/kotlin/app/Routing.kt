@@ -1,15 +1,14 @@
 package com.dlfsystems.app
 
 import com.dlfsystems.server.Yegg
-import com.dlfsystems.compiler.Compiler
 import com.dlfsystems.server.Connection
-import io.ktor.network.sockets.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
 fun Application.configureRouting() {
@@ -23,28 +22,22 @@ fun Application.configureRouting() {
 
     routing {
 
-        webSocket("/ws") { // websocketSession
-            val conn = Connection()
+        webSocket("/ws") {
+            val conn = Connection { launch { outgoing.send(Frame.Text(it)) } }
+            Yegg.addConnection(conn)
             for (frame in incoming) {
                 if (frame is Frame.Text) {
                     val text = frame.readText()
-                    outgoing.send(
-                        Frame.Text(
-                        conn.receiveText(text)
-                    ))
+                    conn.receiveText(text)
                     if (conn.quitRequested) {
+                        Yegg.removeConnection(conn)
                         close(CloseReason(CloseReason.Codes.NORMAL, "Client requested close"))
                     }
                 }
             }
+            Yegg.removeConnection(conn)
         }
 
-        post("/eval") {
-            val code = call.receiveText()
-            call.respondText(
-                Compiler.eval(code, verbose = true)
-            )
-        }
         post("/program/{traitName}/{verbName}")  {
             val code = call.receiveText()
             var result = ""
@@ -58,4 +51,3 @@ fun Application.configureRouting() {
 
     }
 }
-

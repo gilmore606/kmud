@@ -1,12 +1,12 @@
 package com.dlfsystems.value
 
-import com.dlfsystems.vm.Context
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.math.ceil
 import kotlin.math.floor
 
 @Serializable
+@SerialName("VFloat")
 data class VFloat(val v: Float): Value() {
 
     @SerialName("yType")

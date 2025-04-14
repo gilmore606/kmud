@@ -142,7 +142,7 @@ class VM(
                 }
                 O_RETURNNULL -> {
                     if (stack.isNotEmpty()) fail(E_SYS, "stack polluted on return!")
-                    return VVoid()
+                    return VVoid
                 }
                 O_FAIL -> {
                     val a = pop()
@@ -162,8 +162,8 @@ class VM(
                         a1.callVerb(c, a2.v, args)?.also { push(it) }
                             ?: fail(E_VERBNF, "verb not found")
                         c.callsLeft++
+                        ticksLeft = c.ticksLeft
                     } else fail(E_VERBNF, "verb name must be string")
-                    ticksLeft = c.ticksLeft
                 }
 
                 // Variable ops
@@ -222,7 +222,7 @@ class VM(
                 O_GETTRAIT -> {
                     val a1 = pop()
                     if (a1 is VString) {
-                        Yegg.world.getTrait(a1.v)?.also { push(VTrait(it.id)) }
+                        Yegg.world.getTrait(a1.v)?.also { push(it.vTrait) }
                             ?: fail (E_TRAITNF, "trait not found")
                     } else fail(E_TRAITNF, "trait name must be string")
                 }
@@ -288,7 +288,7 @@ class VM(
                 else -> fail(E_SYS, "unknown opcode $word")
             }
         }
-        return if (stack.isEmpty()) VVoid() else pop()
+        return if (stack.isEmpty()) VVoid else pop()
     }
 
 }

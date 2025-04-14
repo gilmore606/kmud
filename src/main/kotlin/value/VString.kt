@@ -6,6 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@SerialName("VString")
 data class VString(var v: String): Value() {
 
     @SerialName("yType")

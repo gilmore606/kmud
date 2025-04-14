@@ -4,23 +4,19 @@ import com.dlfsystems.server.Yegg
 import com.dlfsystems.compiler.Compiler
 import com.dlfsystems.value.VObj
 import com.dlfsystems.value.VString
+import com.dlfsystems.value.VVoid
 import com.dlfsystems.value.Value
 import com.dlfsystems.vm.Context
-import com.dlfsystems.world.trait.SysTrait
-import com.dlfsystems.world.trait.Trait
-import com.dlfsystems.world.trait.TraitID
-import com.dlfsystems.world.trait.UserTrait
+import com.dlfsystems.world.trait.*
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class World(
-    val name: String = "world"
-) {
+data class World(val name: String) {
 
-    val traits: MutableMap<TraitID, Trait> = mutableMapOf()
-    val traitIDs: MutableMap<String, TraitID> = mutableMapOf()
+    private val traits: MutableMap<TraitID, Trait> = mutableMapOf()
+    private val traitIDs: MutableMap<String, TraitID> = mutableMapOf()
 
-    val objs: MutableMap<ObjID, Obj> = mutableMapOf()
+    private val objs: MutableMap<ObjID, Obj> = mutableMapOf()
 
     fun getUserLogin(name: String, password: String): Obj? {
         getTrait("user")?.objects?.forEach { obj ->
@@ -41,14 +37,16 @@ data class World(
     fun getTrait(id: TraitID?) = id?.let { traits[it] }
     fun getObj(id: ObjID?) = id?.let { objs[it] }
 
-    fun getSysValue(name: String): Value = getTrait("sys")!!.getProp(name)!!
+    val sys: Trait
+        get() = getTrait("sys")!!
+    fun getSysValue(name: String): Value = sys.getProp(null, name) ?: VVoid
 
     fun addTrait(name: String): Trait {
         if (traits.values.none { it.name == name }) {
             return when (name) {
                 "sys" -> SysTrait()
                 "user" -> UserTrait()
-                else -> Trait(name)
+                else -> NTrait(name)
             }.also {
                 traits[it.id] = it
                 traitIDs[it.name] = it.id

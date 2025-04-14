@@ -4,6 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@SerialName("VBool")
 data class VBool(val v: Boolean): Value() {
 
     @SerialName("yType")

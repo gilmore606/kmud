@@ -3,6 +3,7 @@ package com.dlfsystems.compiler
 import com.dlfsystems.server.Yegg
 import com.dlfsystems.app.Log
 import com.dlfsystems.compiler.ast.Node
+import com.dlfsystems.server.Connection
 import com.dlfsystems.value.VString
 import com.dlfsystems.vm.*
 
@@ -41,12 +42,10 @@ object Compiler {
         }
     }
 
-    fun eval(code: String, verbose: Boolean = false): String {
+    fun eval(c: Context, code: String, verbose: Boolean = false): String {
         Log.d("eval: $code")
+        c.push(Yegg.vNullObj, Yegg.vNullTrait, "(eval)", listOf(VString(code)))
         var cOut: Result? = null
-        val c = Context().apply {
-            push(Yegg.vNullObj, Yegg.vNullTrait, "(eval)", listOf(VString(code)))
-        }
         try {
             cOut = compile(code)
             Log.d("  opcodes: \n${cOut.code.dumpText()}")

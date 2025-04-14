@@ -101,8 +101,13 @@ class Lexer(val source: String) {
             T_LOGIC_AND ->
                 if (c == '&') emit(T_LOGIC_AND) else fail("expected &&")
             T_STRING ->
-                if (inStringEscape) { accumulate(c) ; inStringEscape = false }
-                else if (c == '\\') inStringEscape = true
+                if (inStringEscape) {
+                    when (c) {
+                        'n' -> accumulate('\n')
+                        else -> accumulate(c)
+                    }
+                    inStringEscape = false
+                } else if (c == '\\') inStringEscape = true
                 else if (c == '$') { emit(T_STRING_SUB_START) ; begin(T_IDENTIFIER) ; inStringVarsub = true }
                 else if (c == '"') emit(T_STRING)
                 else accumulate(c)

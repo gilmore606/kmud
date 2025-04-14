@@ -1,5 +1,6 @@
 package com.dlfsystems.vm
 
+import com.dlfsystems.server.Connection
 import com.dlfsystems.server.Yegg
 import com.dlfsystems.world.World
 import com.dlfsystems.value.*
@@ -8,7 +9,7 @@ import com.dlfsystems.world.trait.TraitID
 
 // Properties of a single command invocation as it passes from verb to verb.
 
-class Context {
+class Context(val connection: Connection? = null) {
     class Call(
         val vThis: VObj,
         val vTrait: VTrait,

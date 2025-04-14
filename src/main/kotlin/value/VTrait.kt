@@ -7,6 +7,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@SerialName("VTrait")
 data class VTrait(val v: TraitID?): Value() {
 
     @SerialName("yType")
@@ -25,7 +26,7 @@ data class VTrait(val v: TraitID?): Value() {
         when (name) {
             "asString" -> return propAsString()
         }
-        return getTrait()?.getProp(name)
+        return getTrait()?.getProp(null, name)
     }
 
     override fun setProp(name: String, value: Value): Boolean {
