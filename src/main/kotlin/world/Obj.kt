@@ -5,7 +5,10 @@ import com.dlfsystems.server.Preposition
 import com.dlfsystems.server.Yegg
 import com.dlfsystems.value.VList
 import com.dlfsystems.value.VObj
+import com.dlfsystems.value.VString
 import com.dlfsystems.value.Value
+import com.dlfsystems.vm.VMException
+import com.dlfsystems.vm.VMException.Type
 import com.dlfsystems.world.trait.Trait
 import com.dlfsystems.world.trait.TraitID
 import kotlinx.serialization.SerialName
@@ -27,12 +30,20 @@ class Obj {
 
     val props: MutableMap<String, Value> = mutableMapOf()
 
-    var location: VObj = Yegg.vNullObj
-    val locationObj: Obj?
-        get() = location.v?.let { Yegg.world.getObj(it) }
-    var contents: VList = VList()
-    val contentsObjs: List<Obj>
-        get() = contents.v.mapNotNull { (it as VObj).v?.let { Yegg.world.getObj(it) }}
+    var vLocation: VObj = Yegg.vNullObj
+    val location: Obj?
+        get() = vLocation.v?.let { Yegg.world.getObj(it) }
+    var vContents: VList = VList()
+    val contents: List<Obj>
+        get() = vContents.v.mapNotNull { (it as VObj).v?.let { Yegg.world.getObj(it) }}
+
+    var vName: VString = Yegg.vNullStr
+    val name: String
+        get() = vName.v
+    var vAliases: VList = VList()
+    val aliases: List<String>
+        get() = vAliases.v.map { (it as VString).v }
+
 
     fun acquireTrait(trait: Trait) {
         traits.add(trait.id)
@@ -43,27 +54,33 @@ class Obj {
         traits.remove(trait.id)
     }
 
-    fun getProp(name: String): Value? {
-        props[name]?.also { return it }
+    fun getProp(propName: String): Value? {
+        props[propName]?.also { return it }
 
         traits.forEach {
-            Yegg.world.getTrait(it)?.getProp(this, name)?.also { return it }
+            Yegg.world.getTrait(it)?.getProp(this, propName)?.also { return it }
         }
         return null
     }
 
-    fun setProp(name: String, value: Value): Boolean {
-        if (hasProp(name)) {
-            props[name] = value
+    fun setProp(propName: String, value: Value): Boolean {
+        if (propName == "name") {
+            if (value is VString) {
+                setName(value.v)
+                return true
+            } else throw VMException(Type.E_TYPE, "name must be string")
+        }
+        if (hasProp(propName)) {
+            props[propName] = value
             return true
         }
         return false
     }
 
-    fun hasProp(name: String): Boolean {
-        if (name in props.keys) return true
+    fun hasProp(propName: String): Boolean {
+        if (propName in props.keys) return true
         traits.forEach { traitID ->
-            if (name in (Yegg.world.getTrait(traitID)?.props?.keys ?: listOf())) return true
+            if (propName in (Yegg.world.getTrait(traitID)?.props?.keys ?: listOf())) return true
         }
         return false
     }
@@ -73,5 +90,13 @@ class Obj {
             trait.matchCommand(this, cmdstr, argstr, dobjstr, dobj, prep, iobjstr, iobj)?.also { return it }
         }
         return null
+    }
+
+    fun setName(newName: String) {
+        vAliases.v.removeIf { (it as VString).v == name }
+        vName = VString(newName)
+        if (!vAliases.v.any { (it as VString).v == newName }) {
+            vAliases.v.add(VString(newName))
+        }
     }
 }

@@ -58,27 +58,27 @@ data class World(val name: String) {
 
     fun destroyObj(obj: Obj) {
         obj.traits.forEach { getTrait(it)?.removeFrom(obj) }
-        obj.contents.v.forEach {
-            moveObj(getObj((it as VObj).v)!!, obj.location)
+        obj.vContents.v.forEach {
+            moveObj(getObj((it as VObj).v)!!, obj.vLocation)
         }
         moveObj(obj, Yegg.vNullObj)
         objs.remove(obj.id)
     }
 
     fun moveObj(obj: Obj, newLocV: VObj) {
-        val oldLoc = obj.location
+        val oldLoc = obj.vLocation
         // Prevent recursive move
         var checkLoc = getObj(newLocV.v)
         while (checkLoc != null) {
-            if (checkLoc.location == obj.vThis) throw IllegalArgumentException("Recursive move")
-            checkLoc = getObj(checkLoc.location.v)
+            if (checkLoc.vLocation == obj.vThis) throw IllegalArgumentException("Recursive move")
+            checkLoc = getObj(checkLoc.vLocation.v)
         }
-        oldLoc.v?.also { getObj(it)!!.contents.v.removeIf { it == obj.vThis } }
+        oldLoc.v?.also { getObj(it)!!.vContents.v.removeIf { it == obj.vThis } }
         getObj(newLocV.v)?.also {
-            it.contents.v.add(obj.vThis)
-            obj.location = newLocV
+            it.vContents.v.add(obj.vThis)
+            obj.vLocation = newLocV
         } ?: run {
-            obj.location = Yegg.vNullObj
+            obj.vLocation = Yegg.vNullObj
         }
     }
 

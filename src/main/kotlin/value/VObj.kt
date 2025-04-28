@@ -27,8 +27,10 @@ data class VObj(val v: ObjID?): Value() {
             when (name) {
                 "asString" -> return propAsString()
                 "traits" -> return propTraits(obj)
-                "location" -> return obj.location
-                "contents" -> return obj.contents
+                "location" -> return obj.vLocation
+                "contents" -> return obj.vContents
+                "name" -> return obj.vName
+                "aliases" -> return obj.vAliases
             }
             return obj.getProp(name)
         }

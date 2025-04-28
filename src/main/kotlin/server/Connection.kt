@@ -58,10 +58,10 @@ class Connection(private val sendText: (String) -> Unit) {
             // If logged in, match against all objs in scope
             val scope = buildList {
                 add(user)
-                addAll(user.contentsObjs)
-                user.locationObj?.also { loc ->
+                addAll(user.contents)
+                user.location?.also { loc ->
                     add(loc)
-                    addAll(loc.contentsObjs)
+                    addAll(loc.contents)
                 }
             }
             val dobj = matchObj(dobjstr, user, scope)
@@ -85,7 +85,7 @@ class Connection(private val sendText: (String) -> Unit) {
 
     private fun matchObj(s: String, objMe: Obj?, scope: List<Obj>): Obj? {
         if (s == "me") return objMe
-        if (s == "here") return objMe?.locationObj
+        if (s == "here") return objMe?.location
         // TODO: match against scope when objs actually have names/aliases
         return null
     }
