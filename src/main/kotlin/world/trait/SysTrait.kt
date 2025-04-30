@@ -170,8 +170,9 @@ class SysTrait : Trait("sys") {
 
     // $sys.dumpDatabase() -> "err"
     private fun verbDumpDatabase(args: List<Value>): VString {
-        if (args.isNotEmpty()) throw IllegalArgumentException("Bad args for dumpDatabase")
-        return VString(Yegg.dumpDatabase())
+        if (args.size > 1 || (args.size == 1 && args[0] !is VBool)) throw IllegalArgumentException("Bad args for dumpDatabase")
+        val withCode = args.isEmpty() || args[0].isTrue()
+        return VString(Yegg.dumpDatabase(withCode))
     }
 
     // $sys.shutdownServer()

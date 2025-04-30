@@ -41,9 +41,6 @@ class VM(
     // Mutate the stack and variables as we go.
     // Return back a Value (VVoid if no explicit return).
     fun execute(c: Context, args: List<Value> = listOf()): Value {
-        stack.clear()
-        variables.clear()
-
         initVar("args", VList.make(args))
         initVar("this", c.vThis)
         initVar("user", c.vUser)
@@ -55,14 +52,11 @@ class VM(
         }
     }
 
-    // Initialize a variable to a value before execution.
-    private fun initVar(name: String, value: Value) {
-        symbols[name]?.also { variables[it] = value }
-    }
+    private fun initVar(name: String, value: Value) { symbols[name]?.also { variables[it] = value } }
 
     private fun executeCode(c: Context): Value {
         pc = 0
-        val stackLimit = (Yegg.world.getSysValue("stackLimit") as VInt).v
+        val stackLimit = Yegg.world.getSysInt("stackLimit")
         var ticksLeft = c.ticksLeft
         while (pc < code.size) {
 

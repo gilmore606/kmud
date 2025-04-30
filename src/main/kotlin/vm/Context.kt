@@ -21,8 +21,8 @@ class Context(val connection: Connection? = null) {
     var vThis: VObj = Yegg.vNullObj
     var vUser: VObj = connection?.user?.vThis ?: Yegg.vNullObj
 
-    var ticksLeft: Int = (Yegg.world.getSysValue("tickLimit") as VInt).v
-    var callsLeft: Int = (Yegg.world.getSysValue("callLimit") as VInt).v
+    var ticksLeft: Int = Yegg.world.getSysInt("tickLimit")
+    var callsLeft: Int = Yegg.world.getSysInt("callLimit")
     val callStack = ArrayDeque<Call>()
 
     // Push or pop the callstack.

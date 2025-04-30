@@ -21,9 +21,9 @@ class Parser(inputTokens: List<Token>) {
     private inline fun expectCloseParen() { consume(T_PAREN_CLOSE) ?: fail("unclosed parentheses") }
 
     // Pull the next token from the input stream.
-    private inline fun consume() = (if (tokens.isEmpty()) EOF() else tokens.removeAt(0)).apply {
-        this@Parser.lineNum = lineNum
-        this@Parser.charNum = charNum
+    private inline fun consume() = (if (tokens.isEmpty()) EOF() else tokens.removeAt(0)).also {
+        lineNum = it.lineNum
+        charNum = it.charNum
     }
 
     // Pull the next token if of the given type, else return null.

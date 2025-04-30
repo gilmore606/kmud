@@ -2,10 +2,7 @@ package com.dlfsystems.world
 
 import com.dlfsystems.server.Yegg
 import com.dlfsystems.compiler.Compiler
-import com.dlfsystems.value.VObj
-import com.dlfsystems.value.VString
-import com.dlfsystems.value.VVoid
-import com.dlfsystems.value.Value
+import com.dlfsystems.value.*
 import com.dlfsystems.world.trait.*
 import kotlinx.serialization.Serializable
 
@@ -39,6 +36,7 @@ data class World(val name: String) {
     val sys: Trait
         get() = getTrait("sys")!!
     fun getSysValue(name: String): Value = sys.getProp(null, name) ?: VVoid
+    fun getSysInt(name: String): Int = (sys.getProp(null, name) as VInt).v
 
     fun addTrait(name: String): Trait {
         if (traits.values.none { it.name == name }) {
