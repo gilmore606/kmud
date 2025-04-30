@@ -57,7 +57,6 @@ data class World(val name: String) {
     fun createObj() = Obj().also { objs[it.id] = it }
 
     fun destroyObj(obj: Obj) {
-        obj.traits.forEach { getTrait(it)?.removeFrom(obj) }
         obj.vContents.v.forEach {
             moveObj(getObj((it as VObj).v)!!, obj.vLocation)
         }

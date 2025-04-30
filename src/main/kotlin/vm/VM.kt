@@ -51,7 +51,7 @@ class VM(
         try {
             return executeCode(c)
         } catch (e: Exception) {
-            throw (e as? VMException ?: VMException(E_SYS, e.message ?: "???")).withLocation(lineNum, charNum)
+            throw (e as? VMException ?: VMException(E_SYS, e.message ?: e.stackTraceToString())).withLocation(lineNum, charNum)
         }
     }
 
