@@ -1,5 +1,6 @@
 package com.dlfsystems.server.mcp
 
+import com.dlfsystems.server.Yegg
 import com.dlfsystems.vm.Context
 import com.dlfsystems.util.systemEpoch
 import com.dlfsystems.value.Value
@@ -16,12 +17,6 @@ object MCP {
     private const val WAIT_FOR_TASKS_MS = 10L
     private val taskMap = TreeMap<Task.ID, Task>()
     private var job: Job? = null
-
-    private val coroutineScope = CoroutineScope(
-        SupervisorJob() +
-        Dispatchers.Default.limitedParallelism(1) +
-        CoroutineName("Yegg MCP thread")
-    )
 
     // Schedule an executable to run some seconds in the future.
     fun schedule(
@@ -53,7 +48,7 @@ object MCP {
     // Start processing all queued tasks.
     fun start() {
         if (job?.isActive == true) throw IllegalStateException("Already started")
-        job = coroutineScope.launch {
+        job = Yegg.launch {
             runTasks()
         }
     }

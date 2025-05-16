@@ -14,7 +14,6 @@ fun main() {
 fun Application.module() {
 
     Yegg.start()
-
     configureRouting()
 
 }

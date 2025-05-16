@@ -1,5 +1,6 @@
 package com.dlfsystems.server
 
+import com.dlfsystems.app.Log
 import com.dlfsystems.compiler.Compiler
 import com.dlfsystems.server.mcp.MCP
 import com.dlfsystems.server.parser.CommandMatch
@@ -23,6 +24,7 @@ class Connection(private val sendText: (String) -> Unit) {
 
     fun receiveText(text: String) {
         // TODO: rework program-buffer in-DB with actual suspend/readLines
+        Log.d("> $text")
         programming?.also { verb ->
             if (text == ".") {
                 val result = Yegg.world.programVerb(verb.first, verb.second, buffer.joinToString("\n"))

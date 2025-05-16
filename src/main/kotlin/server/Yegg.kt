@@ -6,6 +6,7 @@ import com.dlfsystems.value.*
 import com.dlfsystems.world.World
 import com.dlfsystems.world.Obj
 import io.viascom.nanoid.NanoId
+import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.system.exitProcess
@@ -13,14 +14,17 @@ import kotlin.system.exitProcess
 object Yegg {
 
     var worldName = "Minimal"
+    var serverAddress = "127.0.0.1"
+    var serverPort = 8888
     var logLevel = Log.Level.DEBUG
+    var logToConsole = true
     var optimizeCompiler = true
-
-    private val JSON = Json { allowStructuredMapKeys = true }
 
     private const val CONNECT_MSG = "** Connected **"
     private const val DISCONNECT_MSG = "** Disconnected **"
     const val HUH_MSG = "I don't understand that."
+
+    private val JSON = Json { allowStructuredMapKeys = true }
 
     val vTrue = VBool(true)
     val vFalse = VBool(false)
@@ -37,10 +41,30 @@ object Yegg {
     const val ID_CHARS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     fun newID() = NanoId.generateOptimized(8, ID_CHARS, 61, 16)
 
+    private val coroutineScope = CoroutineScope(
+        SupervisorJob() +
+                Dispatchers.Default.limitedParallelism(1) +
+                CoroutineName("Yegg")
+    )
+    fun launch(block: suspend CoroutineScope.() -> Unit) = coroutineScope.launch(block = block)
+
+
     // Start the server.
     fun start() {
+        Log.start(worldName)
         loadWorld()
         MCP.start()
+        Telnet.start()
+        Log.i("Server started.")
+    }
+
+    // Shut down the server.
+    fun shutdownServer() {
+        Log.i("Server shutting down.")
+        Telnet.stop()
+        MCP.stop()
+        Log.stop()
+        exitProcess(0)
     }
 
     private fun loadWorld() {
@@ -109,8 +133,4 @@ object Yegg {
         return ""
     }
 
-    fun shutdownServer() {
-        MCP.stop()
-        exitProcess(0)
-    }
 }

@@ -4,6 +4,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### Yegg ###
+*.log
+*.log.old
+
 ### STS ###
 .apt_generated
 .classpath
