@@ -11,13 +11,4 @@ import kotlinx.serialization.Serializable
 @SerialName("UserTrait")
 class UserTrait : Trait("user") {
 
-    override fun getProp(obj: Obj?, propName: String): Value? {
-        when (propName) {
-            "isConnected" -> return propIsConnected(obj)
-        }
-        return super.getProp(obj, propName)
-    }
-
-    private fun propIsConnected(obj: Obj?) = VBool(Yegg.connectedUsers.containsKey(obj))
-
 }

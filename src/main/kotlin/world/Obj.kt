@@ -1,3 +1,5 @@
+@file:Suppress("NOTHING_TO_INLINE")
+
 package com.dlfsystems.world
 
 import com.dlfsystems.server.parser.CommandMatch
@@ -20,58 +22,64 @@ class Obj {
 
     @Serializable @JvmInline
     @SerialName("ObjID")
-    value class ID(val id: String) { override fun toString() = id }
+    value class ID(val id: String) {
+        override fun toString() = id
+        inline fun obj() = Yegg.world.objs[this]
+    }
 
     val id = ID(NanoID.newID())
     val vThis = VObj(id)
 
     val traits: MutableList<Trait.ID> = mutableListOf()
 
-    val props: MutableMap<String, Value> = mutableMapOf()
+    // One entry per property, from all traits.  If value is null, default comes from traitID.
+    val props: MutableMap<String, Propval> = mutableMapOf()
 
     var location: VObj = Yegg.vNullObj
     val locationObj: Obj?
-        get() = location.v?.let { Yegg.world.getObj(it) }
+        get() = location.v?.obj()
     var contents: VList = VList()
     val contentsObjs: List<Obj>
-        get() = contents.v.mapNotNull { (it as VObj).v?.let { Yegg.world.getObj(it) }}
+        get() = contents.v.mapNotNull { (it as VObj).obj() }
 
-    fun acquireTrait(trait: Trait) {
+    // Traits
+
+    // Add trait to this object.
+    fun addTrait(trait: Trait) {
+        traits.forEach {
+            if (it.trait()!!.inherits(trait.id)) throw IllegalArgumentException("obj already has trait")
+        }
         traits.add(trait.id)
+        trait.applyTo(this)
     }
 
-    fun dispelTrait(trait: Trait) {
-        trait.props.keys.forEach { props.remove(it) }
+    // Remove trait from this object.
+    fun removeTrait(trait: Trait) {
+        if (trait.id !in traits) throw IllegalArgumentException("obj does not have trait")
+        trait.unapplyFrom(this)
         traits.remove(trait.id)
     }
 
-    fun getProp(name: String): Value? {
-        props[name]?.also { return it }
+    // Props
 
-        traits.forEach {
-            Yegg.world.traits[it]?.getProp(this, name)?.also { return it }
-        }
-        return null
+    fun addProp(propName: String, trait: Trait) {
+        if (!props.containsKey(propName)) props[propName] = Propval(trait.id)
     }
 
-    fun setProp(name: String, value: Value): Boolean {
-        if (hasProp(name)) {
-            props[name] = value
-            return true
-        }
-        return false
-    }
+    fun removeProp(propName: String) { props.remove(propName) }
 
-    fun hasProp(name: String): Boolean {
-        if (name in props.keys) return true
-        traits.forEach { traitID ->
-            if (name in (Yegg.world.traits[traitID]?.props?.keys ?: listOf())) return true
-        }
-        return false
-    }
+    inline fun getProp(propName: String): Value? = props[propName]?.get(propName)
+
+    inline fun setProp(propName: String, value: Value): Boolean =
+        props[propName]?.let { it.v = value ; true } ?: false
+
+    inline fun clearProp(propName: String): Boolean =
+        props[propName]?.let { it.v = null ; true } ?: false
+
+    // Commands
 
     fun matchCommand(cmdstr: String, argstr: String, dobjstr: String, dobj: Obj?, prep: Preposition?, iobjstr: String, iobj: Obj?): CommandMatch? {
-        traits.mapNotNull { Yegg.world.traits[it] }.forEach { trait ->
+        traits.mapNotNull { it.trait() }.forEach { trait ->
             trait.matchCommand(this, cmdstr, argstr, dobjstr, dobj, prep, iobjstr, iobj)?.also { return it }
         }
         return null

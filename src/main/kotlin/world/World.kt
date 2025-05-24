@@ -11,7 +11,7 @@ data class World(val name: String) {
     val traits: MutableMap<Trait.ID, Trait> = mutableMapOf()
     private val traitIDs: MutableMap<String, Trait.ID> = mutableMapOf()
 
-    private val objs: MutableMap<Obj.ID, Obj> = mutableMapOf()
+    val objs: MutableMap<Obj.ID, Obj> = mutableMapOf()
 
     fun getUserLogin(name: String, password: String): Obj? {
         getTrait("user")?.objects?.forEach { obj ->
@@ -29,12 +29,11 @@ data class World(val name: String) {
     }
 
     fun getTrait(named: String) = traits[traitIDs[named]]
-    fun getObj(id: Obj.ID?) = id?.let { objs[it] }
 
     val sys: Trait
         get() = getTrait("sys")!!
-    fun getSysValue(name: String): Value = sys.getProp(null, name) ?: VVoid
-    fun getSysInt(name: String): Int = (sys.getProp(null, name) as VInt).v
+    fun getSysValue(name: String): Value = sys.getProp(name) ?: VVoid
+    fun getSysInt(name: String): Int = (sys.getProp(name) as VInt).v
 
     fun addTrait(name: String): Trait {
         if (traits.values.none { it.name == name }) {
@@ -53,9 +52,9 @@ data class World(val name: String) {
     fun createObj() = Obj().also { objs[it.id] = it }
 
     fun destroyObj(obj: Obj) {
-        obj.traits.forEach { traits[it]?.removeFrom(obj) }
+        obj.traits.forEach { traits[it]?.unapplyFrom(obj, forDestroy = true) }
         obj.contents.v.forEach {
-            moveObj(getObj((it as VObj).v)!!, obj.location)
+            moveObj((it as VObj).obj()!!, obj.location)
         }
         moveObj(obj, Yegg.vNullObj)
         objs.remove(obj.id)
@@ -64,26 +63,18 @@ data class World(val name: String) {
     fun moveObj(obj: Obj, newLocV: VObj) {
         val oldLoc = obj.location
         // Prevent recursive move
-        var checkLoc = getObj(newLocV.v)
+        var checkLoc = newLocV.obj()
         while (checkLoc != null) {
             if (checkLoc.location == obj.vThis) throw IllegalArgumentException("Recursive move")
-            checkLoc = getObj(checkLoc.location.v)
+            checkLoc = checkLoc.location.obj()
         }
-        oldLoc.v?.also { getObj(it)!!.contents.v.removeIf { it == obj.vThis } }
-        getObj(newLocV.v)?.also {
+        oldLoc.obj()?.also { it.contents.v.removeIf { it == obj.vThis } }
+        newLocV.obj()?.also {
             it.contents.v.add(obj.vThis)
             obj.location = newLocV
         } ?: run {
             obj.location = Yegg.vNullObj
         }
-    }
-
-    fun applyTrait(traitID: Trait.ID, objID: Obj.ID) {
-        traits[traitID]?.applyTo(objs[objID]!!)
-    }
-
-    fun dispelTrait(traitID: Trait.ID, objID: Obj.ID) {
-        traits[traitID]?.removeFrom(objs[objID]!!)
     }
 
     fun programVerb(traitName: String, name: String, code: String): String {

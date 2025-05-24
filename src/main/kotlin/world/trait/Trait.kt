@@ -10,6 +10,7 @@ import com.dlfsystems.util.matchesWildcard
 import com.dlfsystems.value.*
 import com.dlfsystems.vm.Context
 import com.dlfsystems.world.Obj
+import com.dlfsystems.world.Propval
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -25,44 +26,112 @@ sealed class Trait(val name: String) {
 
     @Serializable @JvmInline
     @SerialName("TraitID")
-    value class ID(val id: String) { override fun toString() = id }
+    value class ID(val id: String) {
+        override fun toString() = id
+        inline fun trait() = Yegg.world.traits[this]
+    }
 
     val id = ID(NanoID.newID())
     val vTrait = VTrait(id)
 
     val traits: MutableList<ID> = mutableListOf()
+    val childTraits: MutableList<ID> = mutableListOf()
 
     val commands: MutableSet<Command> = mutableSetOf()
     val verbs: MutableMap<String, Verb> = mutableMapOf()
-    val props: MutableMap<String, Value> = mutableMapOf()
+    val props: MutableMap<String, Propval> = mutableMapOf()
 
     val objects: MutableSet<Obj.ID> = mutableSetOf()
 
-    fun applyTo(obj: Obj) {
-        obj.traits.forEach {
-            if (Yegg.world.traits[it]?.hasTrait(this.id) == true)
-                throw IllegalArgumentException("obj already inherits trait")
+    // Traits
+
+    // Add parent trait to this trait.
+    fun addTrait(otrait: Trait) {
+        traits.forEach {
+            if (it.trait()!!.inherits(otrait.id)) throw IllegalArgumentException("trait already inherits $otrait")
         }
+        traits.add(otrait.id)
+        otrait.childTraits.add(id)
+        objects.forEach { otrait.applyTo(it.obj()!!) }
+    }
+
+    // Remove parent trait from this trait.
+    fun removeTrait(otrait: Trait) {
+        if (otrait.id !in traits) throw IllegalArgumentException("trait does not have trait")
+        traits.remove(otrait.id)
+        otrait.childTraits.remove(id)
+        objects.forEach { otrait.unapplyFrom(it.obj()!!) }
+    }
+
+    fun inherits(otrait: ID): Boolean {
+        if (otrait == id) return true
+        traits.forEach { if (it.trait()!!.inherits(otrait)) return true }
+        return false
+    }
+
+    // Objects
+
+    fun applyTo(obj: Obj) {
         objects.add(obj.id)
-        obj.acquireTrait(this)
+        nativeProps().forEach {
+            if (!obj.props.containsKey(it)) {
+                obj.addProp(it, this)
+            }
+        }
+        traits.forEach { it.trait()!!.applyTo(obj) }
     }
 
-    fun removeFrom(obj: Obj) {
+    fun unapplyFrom(obj: Obj, forDestroy: Boolean = false) {
         objects.remove(obj.id)
-        obj.dispelTrait(this)
+        if (!forDestroy) nativeProps().forEach {
+            obj.removeProp(it)
+        }
+        traits.forEach { it.trait()!!.unapplyFrom(obj) }
     }
 
-    fun hasTrait(trait: ID): Boolean = (trait in traits) ||
-            (traits.firstOrNull { Yegg.world.traits[it]?.hasTrait(trait) ?: false } != null)
+    // Props
 
-    fun setCommand(command: Command) {
-        commands.removeIf { it.verb == command.verb }
-        commands.add(command)
+    private fun nativeProps() = props.keys.filter { props[it]!!.traitID == id }
+
+    fun addProp(propName: String, value: Value) {
+        if (hasProp(propName)) throw IllegalArgumentException("trait already has prop $propName")
+        props[propName] = Propval(this.id, value)
+        childTraits.forEach { it.trait()!!.addInheritedProp(propName, this) }
+        objects.forEach { it.obj()!!.addProp(propName, this) }
     }
 
-    fun removeCommand(spec: String) {
-        commands.removeIf { it.spec == spec }
+    private fun addInheritedProp(propName: String, fromTrait: Trait) {
+        props[propName] = Propval(fromTrait.id)
     }
+
+    fun removeProp(propName: String) {
+        if (!props.containsKey(propName)) throw IllegalArgumentException("trait has no property $propName")
+        if (props[propName]!!.traitID != id) throw IllegalArgumentException("prop $propName is not owned by trait")
+        props.remove(propName)
+        childTraits.forEach { it.trait()!!.removeInheritedProp(propName) }
+        objects.forEach { it.obj()!!.also { if (it.props[propName]!!.traitID == id) it.removeProp(propName) } }
+    }
+
+    fun removeInheritedProp(propName: String) {
+        props.remove(propName)
+    }
+
+    inline fun hasProp(propName: String): Boolean = props.containsKey(propName)
+
+    open fun getProp(propName: String): Value? {
+        return when (propName) {
+            "objects" -> return VList.make(objects.mapNotNull { it.obj()?.vThis })
+            else -> props[propName]?.get(propName)
+        }
+    }
+
+    inline fun setProp(propName: String, value: Value): Boolean =
+        props[propName]?.let { it.v = value ; true } ?: false
+
+    inline fun clearProp(propName: String): Boolean =
+        props[propName]?.let { it.v = null ; true } ?: false
+
+    // Verbs
 
     fun getVerb(name: String): Verb? = verbs[name]
 
@@ -78,19 +147,18 @@ sealed class Trait(val name: String) {
         verbs.remove(verbName)
     }
 
-    open fun getProp(obj: Obj?, propName: String): Value? {
-        return when (propName) {
-            "objects" -> return VList.make(objects.mapNotNull { Yegg.world.getObj(it)?.vThis })
-            else -> props.getOrDefault(propName, null)
-        }
-    }
-
-    open fun setProp(propName: String, value: Value): Boolean {
-        props[propName] = value
-        return true
-    }
-
     open fun callStaticVerb(c: Context, verbName: String, args: List<Value>): Value? = null
+
+    // Commands
+
+    fun setCommand(command: Command) {
+        commands.removeIf { it.verb == command.verb }
+        commands.add(command)
+    }
+
+    fun removeCommand(spec: String) {
+        commands.removeIf { it.spec == spec }
+    }
 
     fun matchCommand(obj: Obj?, cmdstr: String, argstr: String, dobjstr: String, dobj: Obj?, prep: Preposition?, iobjstr: String, iobj: Obj?): CommandMatch? {
         fun matchArg(argType: Arg?, argString: String, matchedObj: Obj?): Value? =
